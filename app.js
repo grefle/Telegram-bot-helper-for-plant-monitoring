@@ -49,3 +49,15 @@ app.get('/myPlants', (req, res) => {
         }
     });
 });
+
+app.delete('/deletePlant/:id', (req, res) => {
+    const plantId = req.params.id;
+
+    Plant.findByIdAndDelete(plantId, (err) => {
+        if (err) {
+            res.status(500).send(`Помилка: ${err}`);
+        } else {
+            res.status(200).send('Рослину видалено успішно.');
+        }
+    });
+});
