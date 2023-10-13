@@ -94,6 +94,8 @@ bot.onText(/Редагувати рослину/, (msg) => {
     bot.sendMessage(chatId, 'Введіть номер рослини, яку ви хочете редагувати:');
 });
 
+const editingPlant = {};
+
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const messageText = msg.text;
@@ -107,9 +109,67 @@ bot.on('message', (msg) => {
 
                 if (plantIndex >= 0 && plantIndex < plants.length) {
                     const plant = plants[plantIndex];
-                    // Редагування рослини
-                    // Реалізуйте функціонал для редагування рослини, використовуючи bot.sendMessage
+                    editingPlant[chatId] = plant;  // Збереження обраної рослини для редагування
+                    bot.sendMessage(chatId, `Обрана рослина для редагування:\nНазва: ${plant.name}\nБіологічна назва: ${plant.scientificName}\nПолив (дні): ${plant.wateringInterval}\nУмови проростання: ${plant.germinationConditions}\nОстанній полив: ${plant.lastWatered}\nФото: ${plant.photoURL}\n\nВведіть нову інформацію для редагування у відповідному форматі (наприклад, "назва: Нова рослина").`);
+                } else {
+                    bot.sendMessage(chatId, 'Невірний номер рослини. Спробуйте ще раз.');
+                }
+            })
+            .catch((error) => {
+                bot.sendMessage(chatId, `Помилка: ${error}`);
+            });
+    } else {
+        // Редагування рослини
+        const selectedPlant = editingPlant[chatId];
+        if (selectedPlant) {
+            const updatedPlantData = parseUserInput(messageText);
+            // Оновіть відповідно дані рослини у базі даних, використовуючи Mongoose
 
+            bot.sendMessage(chatId, 'Інформацію про рослину оновлено.');
+            editingPlant[chatId] = null;  // Закінчено редагування, очищення даних
+        } else {
+            bot.sendMessage(chatId, 'Необрана рослина для редагування. Виберіть рослину для редагування спочатку.');
+        }
+    }
+});
+
+// Функція для розбору введеної користувачем інформації
+function parseUserInput(input) {
+    const data = {};
+    const lines = input.split('\n');
+    lines.forEach(line => {
+        const [key, value] = line.split(':').map(item => item.trim());
+        data[key.toLowerCase()] = value;
+    });
+    return data;
+}
+
+bot.onText(/Видалити рослину/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Введіть номер рослини, яку ви хочете видалити:');
+});
+
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const messageText = msg.text;
+
+    // Перевірка введеного користувачем номера рослини
+    if (/^\d+$/.test(messageText)) {
+        const plantIndex = parseInt(messageText) - 1;
+        axios.get(myPlantsURL)
+            .then((response) => {
+                const plants = response.data;
+
+                if (plantIndex >= 0 && plantIndex < plants.length) {
+                    const plantId = plants[plantIndex]._id;
+                    // Видалення рослини
+                    axios.delete(`${serverURL}/deletePlant/${plantId}`)
+                        .then((response) => {
+                            bot.sendMessage(chatId, response.data);
+                        })
+                        .catch((error) => {
+                            bot.sendMessage(chatId, `Помилка під час видалення рослини: ${error}`);
+                        });
                 } else {
                     bot.sendMessage(chatId, 'Невірний номер рослини. Спробуйте ще раз.');
                 }
@@ -118,16 +178,4 @@ bot.on('message', (msg) => {
                 bot.sendMessage(chatId, `Помилка: ${error}`);
             });
     }
-});
-
-bot.onText(/Видалити рослину/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Введіть номер рослини, яку ви хочете видалити:');
-    // Реалізуйте функціонал для видалення рослини
-    // Розробіть обробник для видалення рослини та повідомлення користувачу про успішне видалення
-});
-
-bot.onText(/Назад до меню/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Виберіть опцію:', { reply_markup: getPlantsKeyboard });
 });
