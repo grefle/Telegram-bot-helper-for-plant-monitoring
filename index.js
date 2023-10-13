@@ -54,6 +54,16 @@ bot.onText(/Додати рослину/, (msg) => {
     });
 });
 
+const getPlantsKeyboard = {
+    reply_markup: {
+        keyboard: [
+            ['Редагувати рослину', 'Видалити рослину'],
+            ['Назад до меню']
+        ],
+        resize_keyboard: true
+    }
+};
+
 bot.onText(/Мої рослини/, (msg) => {
     const chatId = msg.chat.id;
 
@@ -66,15 +76,58 @@ bot.onText(/Мої рослини/, (msg) => {
                 bot.sendMessage(chatId, 'У вас ще немає збережених рослин.');
             } else {
                 const tableHeader = 'Назва | Біологічна назва | Полив (дні) | Умови проростання | Останній полив | Фото\n';
-                const tableRows = plants.map(plant => {
-                    return `${plant.name} | ${plant.scientificName} | ${plant.wateringInterval} | ${plant.germinationConditions} | ${plant.lastWatered} | ${plant.photoURL}`;
+                const tableRows = plants.map((plant, index) => {
+                    return `${index + 1}. ${plant.name} | ${plant.scientificName} | ${plant.wateringInterval} | ${plant.germinationConditions} | ${plant.lastWatered} | ${plant.photoURL}`;
                 }).join('\n');
 
                 const table = tableHeader + tableRows;
-                bot.sendMessage(chatId, `\`\`\`${table}\`\`\``, { parse_mode: 'Markdown' });
+                bot.sendMessage(chatId, `\`\`\`${table}\`\`\``, { parse_mode: 'Markdown', reply_markup: getPlantsKeyboard });
             }
         })
         .catch((error) => {
             bot.sendMessage(chatId, `Помилка: ${error}`);
         });
+});
+
+bot.onText(/Редагувати рослину/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Введіть номер рослини, яку ви хочете редагувати:');
+});
+
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const messageText = msg.text;
+
+    // Перевірка введеного користувачем номера рослини
+    if (/^\d+$/.test(messageText)) {
+        const plantIndex = parseInt(messageText) - 1;
+        axios.get(myPlantsURL)
+            .then((response) => {
+                const plants = response.data;
+
+                if (plantIndex >= 0 && plantIndex < plants.length) {
+                    const plant = plants[plantIndex];
+                    // Редагування рослини
+                    // Реалізуйте функціонал для редагування рослини, використовуючи bot.sendMessage
+
+                } else {
+                    bot.sendMessage(chatId, 'Невірний номер рослини. Спробуйте ще раз.');
+                }
+            })
+            .catch((error) => {
+                bot.sendMessage(chatId, `Помилка: ${error}`);
+            });
+    }
+});
+
+bot.onText(/Видалити рослину/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Введіть номер рослини, яку ви хочете видалити:');
+    // Реалізуйте функціонал для видалення рослини
+    // Розробіть обробник для видалення рослини та повідомлення користувачу про успішне видалення
+});
+
+bot.onText(/Назад до меню/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Виберіть опцію:', { reply_markup: getPlantsKeyboard });
 });
