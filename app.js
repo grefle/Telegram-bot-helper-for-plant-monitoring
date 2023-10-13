@@ -5,9 +5,16 @@ const mongoose = require('mongoose');
 const app = express();
 const port = 3000;
 
-mongoose.connect('mongodb://localhost:27017/plantReminderDB', {
+const mongoDBURI = 'mongodb+srv://new_user:024650@cluster0.4tmcbxm.mongodb.net/?retryWrites=true&w=majority';
+mongoose.connect(mongoDBURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
+});
+const db = mongoose.connection;
+
+db.on('error', console.error.bind(console, 'Connection error:'));
+db.once('open', () => {
+    console.log('Connected to MongoDB Atlas');
 });
 
 const plantSchema = new mongoose.Schema({
@@ -36,10 +43,6 @@ app.post('/addPlant', (req, res) => {
         });
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
-
 app.get('/myPlants', (req, res) => {
     Plant.find({}, (err, plants) => {
         if (err) {
@@ -60,4 +63,8 @@ app.delete('/deletePlant/:id', (req, res) => {
             res.status(200).send('Рослину видалено успішно.');
         }
     });
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
 });
