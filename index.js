@@ -2,8 +2,11 @@ const TelegramBot = require('node-telegram-bot-api');
 const token = '6461556392:AAEECLgnBQWKCMoahhH2HEe4U5dFQme7yPQ';
 const mongoose = require('mongoose');
 const Plant = require('./database');
+const axios = require('axios');
 
 const bot = new TelegramBot(token, { polling: true });
+const serverURL = 'http://localhost:3000';
+const myPlantsURL = `${serverURL}/myPlants`;
 
 const keyboard = {
     reply_markup: {
@@ -67,3 +70,27 @@ bot.onText(/Додати рослину/, (msg) => {
     });
 });
 
+bot.onText(/Мої рослини/, (msg) => {
+    const chatId = msg.chat.id;
+
+    // Отримання інформації про рослини з сервера
+    axios.get(myPlantsURL)
+        .then((response) => {
+            const plants = response.data;
+
+            if (plants.length === 0) {
+                bot.sendMessage(chatId, 'У вас ще немає збережених рослин.');
+            } else {
+                const tableHeader = 'Назва | Біологічна назва | Полив (дні) | Умови проростання | Останній полив | Фото\n';
+                const tableRows = plants.map(plant => {
+                    return `${plant.name} | ${plant.scientificName} | ${plant.wateringInterval} | ${plant.germinationConditions} | ${plant.lastWatered} | ${plant.photoURL}`;
+                }).join('\n');
+
+                const table = tableHeader + tableRows;
+                bot.sendMessage(chatId, `\`\`\`${table}\`\`\``, { parse_mode: 'Markdown' });
+            }
+        })
+        .catch((error) => {
+            bot.sendMessage(chatId, `Помилка: ${error}`);
+        });
+});
