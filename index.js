@@ -1,30 +1,15 @@
 const TelegramBot = require('node-telegram-bot-api');
 const token = '6461556392:AAEECLgnBQWKCMoahhH2HEe4U5dFQme7yPQ';
+
 const mongoose = require('mongoose');
 const Plant = require('./database');
 const axios = require('axios');
 
-const bot = new TelegramBot(token, { polling: true });
 const serverURL = 'http://localhost:3000';
 const myPlantsURL = `${serverURL}/myPlants`;
+const addPlantURL = `${serverURL}/addPlant`;
 
-const keyboard = {
-    reply_markup: {
-        keyboard: [
-            ['Додати рослину'],
-            ['Мої рослини'],
-            ['Мої нагадування'],
-            ['Справка про користування ботом']
-        ],
-        resize_keyboard: true
-    }
-};
-
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    const welcomeMessage = 'Вітаю! Це ваш бот для нагадування про полив та ухід за рослинами.';
-    bot.sendMessage(chatId, welcomeMessage, keyboard);
-});
+const bot = new TelegramBot(token, { polling: true });
 
 bot.onText(/Додати рослину/, (msg) => {
     const chatId = msg.chat.id;
@@ -53,11 +38,10 @@ bot.onText(/Додати рослину/, (msg) => {
                         bot.once('text', (msg) => {
                             plantData.photoURL = msg.text;
 
-                            // Збереження рослини в базу даних
-                            const newPlant = new Plant(plantData);
-                            newPlant.save()
-                                .then(() => {
-                                    bot.sendMessage(chatId, 'Рослину додано до бази даних.');
+                            // Надсилання даних на сервер
+                            axios.post(addPlantURL, plantData)
+                                .then((response) => {
+                                    bot.sendMessage(chatId, response.data);
                                 })
                                 .catch((error) => {
                                     bot.sendMessage(chatId, `Помилка: ${error}`);
