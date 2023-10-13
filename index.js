@@ -8,6 +8,7 @@ const axios = require('axios');
 const serverURL = 'http://localhost:3000';
 const myPlantsURL = `${serverURL}/myPlants`;
 const addPlantURL = `${serverURL}/addPlant`;
+const remindersURL = `${serverURL}/reminders`;
 
 const bot = new TelegramBot(token, { polling: true });
 
@@ -162,7 +163,6 @@ bot.on('message', (msg) => {
 
                 if (plantIndex >= 0 && plantIndex < plants.length) {
                     const plantId = plants[plantIndex]._id;
-                    // Видалення рослини
                     axios.delete(`${serverURL}/deletePlant/${plantId}`)
                         .then((response) => {
                             bot.sendMessage(chatId, response.data);
@@ -178,4 +178,39 @@ bot.on('message', (msg) => {
                 bot.sendMessage(chatId, `Помилка: ${error}`);
             });
     }
+});
+
+bot.onText(/Мої нагадування/, (msg) => {
+    const chatId = msg.chat.id;
+    axios.get(remindersURL)
+        .then((response) => {
+            const reminders = response.data;
+            if (reminders.length === 0) {
+                bot.sendMessage(chatId, 'У вас немає наявних нагадувань.');
+            } else {
+                const reminderList = reminders.map((reminder, index) => {
+                    return `${index + 1}. ${reminder.text}`;
+                }).join('\n');
+                bot.sendMessage(chatId, `Наявні нагадування:\n${reminderList}`);
+            }
+        })
+        .catch((error) => {
+            bot.sendMessage(chatId, `Помилка: ${error}`);
+        });
+});
+
+bot.onText(/Справка про користування ботом/, (msg) => {
+    const chatId = msg.chat.id;
+    const helpMessage = `
+Справка про користування ботом:
+
+1. *Додати рослину*: Дозволяє вам додати нову рослину та вказати її параметри.
+2. *Мої рослини*: Переглянути список доданих рослин.
+3. *Мої нагадування*: Переглянути наявні нагадування.
+4. *Справка про користування ботом*: Показати цей текст з інструкціями.
+
+Для отримання інформації про кожну команду введіть /help_команда.
+Наприклад, /help_додатирослину для отримання довідки щодо команди "Додати рослину".
+  `;
+    bot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
 });
