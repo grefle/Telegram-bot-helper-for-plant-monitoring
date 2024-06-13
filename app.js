@@ -83,7 +83,7 @@ app.put('/updatePlant/:id', async (req, res) => {
             return res.status(400).send('Не вказані дані для оновлення рослини.');
         }
         const updatedPlant = await Plant.findByIdAndUpdate(plantId, updatedData, { new: true });
-        
+
         if (!updatedPlant) {
             return res.status(404).send('Рослину не знайдено для оновлення.');
         }
