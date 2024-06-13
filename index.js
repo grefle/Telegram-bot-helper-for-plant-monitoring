@@ -25,18 +25,12 @@ const mainMenuKeyboard = {
     resize_keyboard: true
 };
 
-// Команда /start для початку спілкування з ботом
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Виберіть опцію:', { reply_markup: mainMenuKeyboard });
-});
-
 // Обробка команди /cancel для скасування процесу додавання або редагування рослини
 bot.onText(/\/cancel/, (msg) => {
     const chatId = msg.chat.id;
     if (editingPlant[chatId]) {
         delete editingPlant[chatId];  // Видалення обраної рослини для редагування
-        bot.sendMessage(chatId, 'Редагування рослини скасовано.');
+        bot.sendMessage(chatId, 'Редагування рослини скасовано.', { reply_markup: mainMenuKeyboard });
     } else if (addPlantProcess[chatId]) {
         delete addPlantProcess[chatId];  // Видалення процесу додавання для користувача
         bot.sendMessage(chatId, 'Процес додавання рослини скасовано.', { reply_markup: mainMenuKeyboard });
@@ -48,8 +42,10 @@ bot.on('message', async (msg) => {
     const messageText = msg.text;
 
     if (messageText === '/start') {
-        bot.sendMessage(chatId, 'Виберіть опцію:', { reply_markup: mainMenuKeyboard });
-
+        bot.sendMessage(chatId, 'Вітаю! я бот, який допоможе вам зберігати інформацію про ваші рослини! ' +
+            'Будь ласка скористайтеся командою ' +
+            '"Справка про користування ботом" для більш детальної інформації.\n' +
+            'Будь ласка виберіть опцію:', { reply_markup: mainMenuKeyboard });
     } else if (messageText === 'Додати рослину') {
         addPlantProcess[chatId] = { step: 1, plantData: {} };
         bot.sendMessage(chatId, 'Введіть назву рослини або /cancel для скасування:');
@@ -94,23 +90,20 @@ bot.on('message', async (msg) => {
         const updatedData = parseUserInput(messageText);
         try {
             await updatePlantInfo(editingPlant[chatId]._id, updatedData);
-            await bot.sendMessage(chatId, 'Інформацію про рослину успішно оновлено.');
+            await bot.sendMessage(chatId, 'Інформацію про рослину успішно оновлено.', { reply_markup: mainMenuKeyboard });
             isEditing = false;
             delete editingPlant[chatId];
         } catch (error) {
-            await bot.sendMessage(chatId, `Помилка оновлення інформації про рослину: ${error.message}`);
+            await bot.sendMessage(chatId, `Помилка оновлення інформації про рослину: ${error.message}`, { reply_markup: mainMenuKeyboard });
         }
     }
 });
 
 async function updatePlantInfo(plantId, updatedData) {
     try {
-        console.log('Updated Data:', updatedData); // Додано логування
         const response = await axios.put(`${serverURL}/updatePlant/${plantId}`, updatedData);
-        console.log('Response:', response.data); // Додано логування
         return response.data;
     } catch (error) {
-        console.error('Error updating plant info:', error); // Додано логування
         throw new Error(`Помилка оновлення інформації про рослину: ${error.message}`);
     }
 }
@@ -152,7 +145,7 @@ bot.onText(/Мої рослини/, async (msg) => {
         const response = await axios.get(myPlantsURL);
         const plants = response.data;
         if (plants.length === 0) {
-            await bot.sendMessage(chatId, 'У вас ще немає збережених рослин.');
+            await bot.sendMessage(chatId, 'У вас ще немає збережених рослин.',{ reply_markup: mainMenuKeyboard });
         } else {
             const keyboard = {
                 inline_keyboard: plants.map((plant, index) => [
@@ -162,7 +155,7 @@ bot.onText(/Мої рослини/, async (msg) => {
             await bot.sendMessage(chatId, 'Ваші рослини:', { reply_markup: keyboard });
         }
     } catch (error) {
-        await bot.sendMessage(chatId, `Помилка: ${error}`);
+        await bot.sendMessage(chatId, `Помилка: ${error}`, { reply_markup: mainMenuKeyboard });
     }
 });
 
@@ -191,15 +184,15 @@ bot.on('callback_query', async (callbackQuery) => {
         } else if (action === 'edit') {
             isEditing = true;
             editingPlant[chatId] = selectedPlant;
-            const promptMessage = 'Введіть нову інформацію про рослину у форматі:\nназва: нова назва\nбіологічна назва: нова біологічна назва\nперіодичність поливання: нова періодичність (у днях)\nумови проростання: нові умови\nчас останнього поливання: новий час (у форматі YYYY-MM-DD)';
+            const promptMessage = 'Введіть нову інформацію про рослину у форматі або /cancel для скасування:\nназва: нова назва\nбіологічна назва: нова біологічна назва\nперіодичність поливання: нова періодичність (у днях)\nумови проростання: нові умови\nчас останнього поливання: новий час (у форматі YYYY-MM-DD)';
             bot.sendMessage(chatId, promptMessage);
 
         } else if (action === 'delete') {
             await axios.delete(`${serverURL}/deletePlant/${selectedPlant._id}`);
-            bot.sendMessage(chatId, 'Рослину успішно видалено.');
+            bot.sendMessage(chatId, 'Рослину успішно видалено.', { reply_markup: mainMenuKeyboard });
         }
     } catch (error) {
-        bot.sendMessage(chatId, `Помилка: ${error}`);
+        bot.sendMessage(chatId, `Помилка: ${error}`, { reply_markup: mainMenuKeyboard });
     }
 });
 
@@ -210,7 +203,7 @@ bot.onText(/Мої нагадування/, async (msg) => {
         const response = await axios.get(myPlantsURL);
         const plants = response.data;
         if (plants.length === 0) {
-            await bot.sendMessage(chatId, 'У вас немає збережених рослин.');
+            await bot.sendMessage(chatId, 'У вас немає збережених рослин.', { reply_markup: mainMenuKeyboard });
         } else {
             let message = 'Рослини, які потребують поливу:\n\n';
             let anyPlantsNeedWatering = false;
@@ -227,11 +220,11 @@ bot.onText(/Мої нагадування/, async (msg) => {
             if (anyPlantsNeedWatering) {
                 await bot.sendMessage(chatId, message);
             } else {
-                await bot.sendMessage(chatId, 'Наразі всі ваші рослини политі вчасно.');
+                await bot.sendMessage(chatId, 'Наразі всі ваші рослини политі вчасно.', { reply_markup: mainMenuKeyboard });
             }
         }
     } catch (error) {
-        await bot.sendMessage(chatId, `Помилка: ${error.message}`);
+        await bot.sendMessage(chatId, `Помилка: ${error.message}`, { reply_markup: mainMenuKeyboard });
     }
 });
 
