@@ -33,8 +33,6 @@ app.use(bodyParser.json());
 app.post('/addPlant', async (req, res) => {
     try {
         const plantData = req.body;
-
-        // Validate plant data here if necessary
         const newPlant = new Plant(plantData);
         await newPlant.save();
         res.status(200).send('Рослину додано до бази даних.');
@@ -65,12 +63,6 @@ app.delete('/deletePlant/:id', async (req, res) => {
         console.error('Error in /deletePlant/:id:', error);
         res.status(500).send(`Помилка: ${error.message}`);
     }
-});
-
-// Додано логування
-app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url} - ${JSON.stringify(req.body)}`);
-    next();
 });
 
 // Маршрут для оновлення інформації про рослину

@@ -1,10 +1,10 @@
 const TelegramBot = require('node-telegram-bot-api');
 const token = '6461556392:AAEECLgnBQWKCMoahhH2HEe4U5dFQme7yPQ';
 
+const bot = new TelegramBot(token, { polling: true });
+
 const { MongoClient } = require('mongodb');
 const axios = require('axios');
-
-const bot = new TelegramBot(token, { polling: true });
 
 const serverURL = 'http://localhost:3000';
 const myPlantsURL = `${serverURL}/myPlants`;
@@ -184,7 +184,12 @@ bot.on('callback_query', async (callbackQuery) => {
         } else if (action === 'edit') {
             isEditing = true;
             editingPlant[chatId] = selectedPlant;
-            const promptMessage = 'Введіть нову інформацію про рослину у форматі або /cancel для скасування:\nназва: нова назва\nбіологічна назва: нова біологічна назва\nперіодичність поливання: нова періодичність (у днях)\nумови проростання: нові умови\nчас останнього поливання: новий час (у форматі YYYY-MM-DD)';
+            const promptMessage = 'Введіть нову інформацію про рослину у форматі або /cancel для скасування:\n' +
+                'назва: нова назва\n' +
+                'біологічна назва: нова біологічна назва\n' +
+                'періодичність поливання: нова періодичність (у днях)\n' +
+                'умови проростання: нові умови\n' +
+                'час останнього поливання: новий час (у форматі YYYY-MM-DD)';
             bot.sendMessage(chatId, promptMessage);
 
         } else if (action === 'delete') {
