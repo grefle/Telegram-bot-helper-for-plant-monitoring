@@ -47,9 +47,8 @@ bot.on('message', async (msg) => {
             '"Справка про користування ботом" для більш детальної інформації.\n' +
             'Будь ласка виберіть опцію:', { reply_markup: mainMenuKeyboard });
     } else if (messageText === 'Додати рослину') {
-        addPlantProcess[chatId] = { step: 1, plantData: {} };
+        addPlantProcess[chatId] = { step: 1, plantData: { userId: chatId } };  // Додаємо userId до plantData
         bot.sendMessage(chatId, 'Введіть назву рослини або /cancel для скасування:');
-
     } else if (addPlantProcess[chatId]) {
         const { step, plantData } = addPlantProcess[chatId];
         switch (step) {
@@ -85,7 +84,6 @@ bot.on('message', async (msg) => {
                 delete addPlantProcess[chatId];
                 break;
         }
-
     } else if (isEditing && editingPlant[chatId]) {
         const updatedData = parseUserInput(messageText);
         try {
@@ -142,10 +140,10 @@ function parseUserInput(input) {
 bot.onText(/Мої рослини/, async (msg) => {
     const chatId = msg.chat.id;
     try {
-        const response = await axios.get(myPlantsURL);
+        const response = await axios.get(myPlantsURL, { params: { userId: chatId } });
         const plants = response.data;
         if (plants.length === 0) {
-            await bot.sendMessage(chatId, 'У вас ще немає збережених рослин.',{ reply_markup: mainMenuKeyboard });
+            await bot.sendMessage(chatId, 'У вас ще немає збережених рослин.', { reply_markup: mainMenuKeyboard });
         } else {
             const keyboard = {
                 inline_keyboard: plants.map((plant, index) => [
@@ -167,7 +165,7 @@ bot.on('callback_query', async (callbackQuery) => {
     const action = data.split('_')[0];
 
     try {
-        const response = await axios.get(myPlantsURL);
+        const response = await axios.get(myPlantsURL, { params: { userId: chatId } });
         const plants = response.data;
         const selectedPlant = plants[plantIndex];
 
@@ -205,7 +203,7 @@ bot.on('callback_query', async (callbackQuery) => {
 bot.onText(/Мої нагадування/, async (msg) => {
     const chatId = msg.chat.id;
     try {
-        const response = await axios.get(myPlantsURL);
+        const response = await axios.get(myPlantsURL, { params: { userId: chatId } });
         const plants = response.data;
         if (plants.length === 0) {
             await bot.sendMessage(chatId, 'У вас немає збережених рослин.', { reply_markup: mainMenuKeyboard });

@@ -6,6 +6,7 @@ const plantSchema = new mongoose.Schema({
     wateringInterval: Number,
     germinationConditions: String,
     lastWatered: Date,
+    userId: { type: String, required: true }
 });
 
 const Plant = mongoose.model('Plant', plantSchema);

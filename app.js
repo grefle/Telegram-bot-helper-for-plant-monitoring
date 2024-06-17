@@ -44,15 +44,14 @@ app.post('/addPlant', async (req, res) => {
 
 app.get('/myPlants', async (req, res) => {
     try {
-        const plants = await Plant.find({});
-        console.log('Plants:', plants);  // Перевірка даних на сервері
+        const userId = req.query.userId;  // Отримуємо userId з запиту
+        const plants = await Plant.find({ userId });
         res.json(plants);
     } catch (error) {
         console.error('Error fetching plants:', error);
         res.status(500).send('Помилка отримання даних про рослини');
     }
 });
-
 
 app.delete('/deletePlant/:id', async (req, res) => {
     try {
@@ -65,7 +64,6 @@ app.delete('/deletePlant/:id', async (req, res) => {
     }
 });
 
-// Маршрут для оновлення інформації про рослину
 app.put('/updatePlant/:id', async (req, res) => {
     try {
         const plantId = req.params.id;
