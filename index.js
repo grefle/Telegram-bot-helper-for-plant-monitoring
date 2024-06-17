@@ -199,7 +199,6 @@ bot.on('callback_query', async (callbackQuery) => {
     }
 });
 
-// Команда Мої нагадування для перевірки рослин, які потребують поливу
 bot.onText(/Мої нагадування/, async (msg) => {
     const chatId = msg.chat.id;
     try {
@@ -210,21 +209,36 @@ bot.onText(/Мої нагадування/, async (msg) => {
         } else {
             let message = 'Рослини, які потребують поливу:\n\n';
             let anyPlantsNeedWatering = false;
+            const currentDate = new Date();
             plants.forEach((plant, index) => {
                 const lastWatered = new Date(plant.lastWatered);
                 const wateringInterval = plant.wateringInterval;
                 const nextWateringDate = new Date(lastWatered.getTime() + wateringInterval * 24 * 60 * 60 * 1000);
-                const currentDate = new Date();
-                if (currentDate >= nextWateringDate) {
+
+                // Порівнюємо дати без урахування часу
+                const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+                const nextWateringDateOnly = new Date(nextWateringDate.getFullYear(), nextWateringDate.getMonth(), nextWateringDate.getDate());
+
+                if (currentDateOnly > nextWateringDateOnly) {
                     anyPlantsNeedWatering = true;
-                    message += `${index + 1}. ${plant.name}\n   Останній полив: ${lastWatered.toLocaleDateString()}\n   Наступний полив: ${nextWateringDate.toLocaleDateString()}\n\n`;
+                    message += `${index + 1}. ${plant.name}\n   Останній полив: ${lastWatered.toLocaleDateString()}\n   Наступний полив: ${nextWateringDate.toLocaleDateString()}\n   Полив запізнився: так\n\n`;
+                } else if (currentDateOnly.getTime() === nextWateringDateOnly.getTime()) {
+                    anyPlantsNeedWatering = true;
+                    message += `${index + 1}. ${plant.name}\n   Останній полив: ${lastWatered.toLocaleDateString()}\n   Наступний полив: ${nextWateringDate.toLocaleDateString()}\n   Полив запізнився: ні, потрібно полити сьогодні\n\n`;
+                } else {
+                    message += `${index + 1}. ${plant.name}\n   Останній полив: ${lastWatered.toLocaleDateString()}\n   Наступний полив: ${nextWateringDate.toLocaleDateString()}\n   Полив запізнився: ні\n\n`;
                 }
             });
-            if (anyPlantsNeedWatering) {
-                await bot.sendMessage(chatId, message);
-            } else {
-                await bot.sendMessage(chatId, 'Наразі всі ваші рослини политі вчасно.', { reply_markup: mainMenuKeyboard });
+            if (!anyPlantsNeedWatering) {
+                message = 'Наразі всі ваші рослини политі вчасно.\n\n';
+                plants.forEach((plant, index) => {
+                    const lastWatered = new Date(plant.lastWatered);
+                    const wateringInterval = plant.wateringInterval;
+                    const nextWateringDate = new Date(lastWatered.getTime() + wateringInterval * 24 * 60 * 60 * 1000);
+                    message += `${index + 1}. ${plant.name}\n   Останній полив: ${lastWatered.toLocaleDateString()}\n   Наступний полив: ${nextWateringDate.toLocaleDateString()}\n\n`;
+                });
             }
+            await bot.sendMessage(chatId, message, { reply_markup: mainMenuKeyboard });
         }
     } catch (error) {
         await bot.sendMessage(chatId, `Помилка: ${error.message}`, { reply_markup: mainMenuKeyboard });
